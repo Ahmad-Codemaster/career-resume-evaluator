@@ -77,7 +77,7 @@ class Ajax {
 			wp_send_json_error( 'Grok API Key is missing in settings.' );
 		}
 
-		$model = get_option( 'cre_grok_model', 'grok-beta' );
+		$model = get_option( 'cre_grok_model', 'grok-3' );
 
 		$response = wp_remote_post( 'https://api.x.ai/v1/chat/completions', [
 			'headers' => [
@@ -100,6 +100,14 @@ class Ajax {
 
 		if ( is_wp_error( $response ) ) {
 			wp_send_json_error( 'API Error: ' . $response->get_error_message() );
+		}
+
+		$http_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $http_code ) {
+			$error_body = wp_remote_retrieve_body( $response );
+			$error_json = json_decode( $error_body, true );
+			$error_msg = $error_json['error']['message'] ?? substr( $error_body, 0, 200 );
+			wp_send_json_error( 'Grok API Error (HTTP ' . $http_code . '): ' . sanitize_text_field( $error_msg ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
@@ -165,7 +173,7 @@ class Ajax {
 		check_ajax_referer( 'cre_form_nonce', 'nonce' );
 
 		$email = sanitize_email( $_POST['email'] ?? '' );
-		$raw_data = isset($_POST['raw_data']) ? $_POST['raw_data'] : [];
+		$raw_data = isset($_POST['raw_data']) ? map_deep( $_POST['raw_data'], 'sanitize_text_field' ) : [];
 
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_send_json_error( 'Invalid email address.' );
@@ -249,38 +257,38 @@ class Ajax {
 		. "--- OUTPUT FORMAT ---\n"
 		. "Return ONLY valid JSON with this exact structure:\n"
 		. "{\n"
-		. "  'profile': { \n"
-		. "     'name': 'Extracted Name', \n"
-		. "     'extracted_role': 'Extracted Current Role', \n"
-		. "     'extracted_experience': 'Extracted Total Years', \n"
-		. "     'scores': { 'resume_strength': 85, 'career_match': 75, 'conversion_chance': 60 } \n"
+		. "  \"profile\": { \n"
+		. "     \"name\": \"Extracted Name\", \n"
+		. "     \"extracted_role\": \"Extracted Current Role\", \n"
+		. "     \"extracted_experience\": \"Extracted Total Years\", \n"
+		. "     \"scores\": { \"resume_strength\": 85, \"career_match\": 75, \"conversion_chance\": 60 } \n"
 		. "  },\n"
-		. "  'analysis': { 'summary': 'Executive summary...', 'strengths': ['s1'], 'weaknesses': ['w1'] },\n"
-		. "  'careers': [\n"
+		. "  \"analysis\": { \"summary\": \"Executive summary...\", \"strengths\": [\"s1\"], \"weaknesses\": [\"w1\"] },\n"
+		. "  \"careers\": [\n"
 		. "    {\n"
-		. "      'rank': 1,\n"
-		. "      'role': 'Target Role (Year 8)',\n"
-		. "      'entry_role_title': 'Immediate Start Role (Year 0)',\n"
-		. "      'description': 'Description of the path',\n"
-		. "      'salary_year_8': '$150,000 {$currency}',\n"
-		. "      'skill_overlap_pct': 75,\n"
-		. "      'skill_overlap_text': 'e.g., Python, Management',\n"
-		. "      'job_progression_stages': [\n"
-		. "         { 'year': 'Year 0-2', 'role': 'Junior Role', 'salary': '$60k {$currency}', 'tasks': 'Learning basics' },\n"
-		. "         { 'year': 'Year 3-5', 'role': 'Mid-Level Role', 'salary': '$90k {$currency}', 'tasks': 'Leading small teams' },\n"
-		. "         { 'year': 'Year 6-8', 'role': 'Senior Role', 'salary': '$120k {$currency}', 'tasks': 'Strategic planning' }\n"
+		. "      \"rank\": 1,\n"
+		. "      \"role\": \"Target Role (Year 8)\",\n"
+		. "      \"entry_role_title\": \"Immediate Start Role (Year 0)\",\n"
+		. "      \"description\": \"Description of the path\",\n"
+		. "      \"salary_year_8\": \"$150,000 {$currency}\",\n"
+		. "      \"skill_overlap_pct\": 75,\n"
+		. "      \"skill_overlap_text\": \"e.g., Python, Management\",\n"
+		. "      \"job_progression_stages\": [\n"
+		. "         { \"year\": \"Year 0-2\", \"role\": \"Junior Role\", \"salary\": \"$60k {$currency}\", \"tasks\": \"Learning basics\" },\n"
+		. "         { \"year\": \"Year 3-5\", \"role\": \"Mid-Level Role\", \"salary\": \"$90k {$currency}\", \"tasks\": \"Leading small teams\" },\n"
+		. "         { \"year\": \"Year 6-8\", \"role\": \"Senior Role\", \"salary\": \"$120k {$currency}\", \"tasks\": \"Strategic planning\" }\n"
 		. "      ],\n"
-		. "      'skills_analysis': {\n"
-		. "         'current_fit': 'Skills they already have',\n"
-		. "         'missing': 'Skills they lack'\n"
+		. "      \"skills_analysis\": {\n"
+		. "         \"current_fit\": \"Skills they already have\",\n"
+		. "         \"missing\": \"Skills they lack\"\n"
 		. "      },\n"
-		. "      'certification_details': [\n"
-		. "         { 'name': 'Cert Name', 'provider': 'Coursera/Udemy/etc', 'link': 'https://...' }\n"
+		. "      \"certification_details\": [\n"
+		. "         { \"name\": \"Cert Name\", \"provider\": \"Coursera/Udemy/etc\", \"link\": \"https://...\" }\n"
 		. "      ]\n"
 		. "    }\n"
 		. "  ],\n"
-		. "  'similar_profiles': [\n"
-		. "     { 'name': 'John Doe', 'trajectory': 'Accountant > Data Analyst', 'linkedin_url': 'https://www.google.com/search?q=site:linkedin.com/in/+John+Doe+Data', 'similarity_reason': 'Successfully pivoted from finance to data...' }\n"
+		. "  \"similar_profiles\": [\n"
+		. "     { \"name\": \"John Doe\", \"trajectory\": \"Accountant > Data Analyst\", \"linkedin_url\": \"https://www.google.com/search?q=site:linkedin.com/in/+John+Doe+Data\", \"similarity_reason\": \"Successfully pivoted from finance to data...\" }\n"
 		. "  ]\n"
 		. "}";
 	}
