@@ -73,7 +73,7 @@ class Settings {
 			return;
 		}
 
-		$active_tab = isset( $_GET['tab'] ) ? $_GET['tab'] : 'settings';
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'settings';
 		?>
 		<div class="wrap">
 			<h1>Lumen Path Career Roadmap</h1>
@@ -94,14 +94,15 @@ class Settings {
 
 	private function render_settings_tab() {
 		$models = [
+			'grok-4-latest',
+			'grok-4-0709',
+			'grok-3',
+			'grok-3-mini',
+			'grok-3-fast',
 			'grok-2-latest',
-			'grok-2',
-			'grok-2-vision-latest',
-			'grok-2-vision',
-			'grok-beta',
-			'grok-vision-beta'
+			'grok-2-vision-1212',
 		];
-		$current_model = get_option( 'cre_grok_model', 'grok-beta' );
+		$current_model = get_option( 'cre_grok_model', 'grok-3' );
 		?>
 		<div class="card" style="max-width: 100%; margin-top: 20px; padding: 10px 20px;">
 			<h2>Usage Shortcode</h2>
@@ -229,7 +230,7 @@ class Settings {
 			wp_send_json_error( 'API Key not saved.' );
 		}
 
-		$model = get_option( 'cre_grok_model', 'grok-beta' );
+		$model = get_option( 'cre_grok_model', 'grok-3' );
 
 		$response = wp_remote_post( 'https://api.x.ai/v1/chat/completions', [
 			'headers' => [
