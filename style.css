@@ -529,3 +529,71 @@
 		margin-bottom: 20px;
 	}
 }
+
+/* Field Error Highlighting */
+.cre-field-error {
+	border-color: #ef4444 !important;
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Privacy Note */
+.cre-privacy-note {
+	text-align: center;
+	font-size: 0.8rem;
+	color: #64748b;
+	margin-top: 15px;
+	padding: 12px;
+	background: #f8fafc;
+	border-radius: 8px;
+	border: 1px solid #e2e8f0;
+	line-height: 1.5;
+}
+
+/* Lumen Recommends Badge */
+.cre-lumen-badge {
+	display: inline-block;
+	padding: 3px 8px;
+	background: linear-gradient(135deg, #f59e0b, #d97706);
+	color: #fff;
+	border-radius: 12px;
+	font-size: 0.65rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-left: 8px;
+}
+
+/* Trajectory Subtitle */
+.cre-trajectory-subtitle {
+	font-size: 1rem;
+	font-weight: 600;
+	color: #334155;
+	margin: 5px 0 3px;
+}
+.cre-trajectory-desc {
+	font-size: 0.85rem;
+	color: #64748b;
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* Salary Warning */
+.cre-salary-warning {
+	color: #ef4444;
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin-top: 4px;
+}
+
+/* Upload success state */
+.cre-upload-area.uploaded {
+	border-color: #16a34a;
+	background: #f0fdf4;
+}
+
+/* Optional label hint */
+.cre-optional-hint {
+	font-weight: 400;
+	color: #94a3b8;
+	font-size: 0.75rem;
+}

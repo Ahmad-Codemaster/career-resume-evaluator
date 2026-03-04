@@ -8,17 +8,27 @@ jQuery(document).ready(function($) {
 	
 	let lastResponseData = null;
 
-	// Check inputs to enable button
-	form.on('change keyup', 'input', function() {
+	// Check inputs/selects to enable button
+	function checkFormFilled() {
 		let allFilled = true;
 		form.find('input[required]').each(function() {
 			if ($(this).val() === '') allFilled = false;
+		});
+		form.find('select[required]').each(function() {
+			if ($(this).val() === '' || $(this).val() === null) allFilled = false;
 		});
 		if (allFilled) {
 			submitBtn.removeAttr('disabled');
 		} else {
 			submitBtn.attr('disabled', 'disabled');
 		}
+	}
+
+	form.on('change keyup', 'input, select', checkFormFilled);
+
+	// Remove error class on user input/change
+	form.on('input change keyup', 'input, select', function() {
+		$(this).removeClass('cre-field-error');
 	});
 
 	// File Upload Simulation & Feedback
@@ -40,7 +50,9 @@ jQuery(document).ready(function($) {
 				if (width >= 100) {
 					clearInterval(interval);
 					progressBar.hide();
-					uploadSuccess.text('✅ ' + fileName + ' uploaded successfully').fadeIn();
+					uploadSuccess.text('✅ Document uploaded successfully').fadeIn();
+					$('#cre-upload-label-text').text(fileName);
+					$('.cre-upload-area').addClass('uploaded');
 					form.trigger('change');
 				} else {
 					width += 10;
@@ -53,6 +65,18 @@ jQuery(document).ready(function($) {
 	// Handle Form Submission
 	form.on('submit', function(e) {
 		e.preventDefault();
+
+		// Validate required fields — highlight errors
+		let hasError = false;
+		form.find('input[required], select[required]').each(function() {
+			const val = $(this).val();
+			if (val === '' || val === null) {
+				$(this).addClass('cre-field-error');
+				hasError = true;
+			}
+		});
+
+		if (hasError) return;
 
 		form.slideUp();
 		$('#cre-loading').fadeIn();

@@ -64,12 +64,12 @@ class Shortcode {
 					<!-- Personal & Contact -->
 					<div class="cre-step-group">
 						<div class="cre-step">
-							<label for="cre_email">Email</label>
+							<label for="cre_email">Where should we send your roadmap?</label>
 							<input type="email" id="cre_email" name="cre_email" placeholder="you@example.com" required>
 						</div>
 
 						<div class="cre-step">
-							<label for="cre_work_setup">Setup</label>
+							<label for="cre_work_setup">Preferred Work Setup</label>
 							<select id="cre_work_setup" name="cre_work_setup" required>
 								<option value="Remote">Remote</option>
 								<option value="Hybrid">Hybrid</option>
@@ -79,7 +79,7 @@ class Shortcode {
 					</div>
 
 					<div class="cre-step">
-						<label for="cre_location">Location</label>
+						<label for="cre_location">Where You Want to Work From</label>
 						<select id="cre_location" name="cre_location" required>
 							<option value="" disabled selected>Select Region</option>
 							<?php foreach ( $countries as $code => $name ) : ?>
@@ -91,14 +91,14 @@ class Shortcode {
 					<!-- Financial Goals -->
 					<div class="cre-row-2">
 						<div class="cre-step">
-							<label for="cre_current_salary">Current Pay</label>
+							<label for="cre_current_salary">Current Pay <span class="cre-optional-hint">(optional)</span></label>
 							<div class="cre-input-icon">
 								<span>$</span>
 								<input type="number" id="cre_current_salary" name="cre_current_salary" placeholder="0.00">
 							</div>
 						</div>
 						<div class="cre-step">
-							<label for="cre_salary">Target Pay (Yr 8)</label>
+							<label for="cre_salary">8-Year Target Pay</label>
 							<div class="cre-input-icon">
 								<span>$</span>
 								<input type="number" id="cre_salary" name="cre_salary" placeholder="250000" required>
@@ -108,31 +108,55 @@ class Shortcode {
 
 					<!-- Pivot Goals -->
 					<div class="cre-step">
-						<label for="cre_roles">Interests</label>
-						<input type="text" id="cre_roles" name="cre_roles" placeholder="Tech, Product, Finance..." required>
+						<label for="cre_field">Desired Field / Domain</label>
+						<select id="cre_field" name="cre_field" required>
+							<option value="" disabled selected>Select a field</option>
+							<option value="Technology">Technology</option>
+							<option value="Product">Product</option>
+							<option value="Data / Analytics">Data / Analytics</option>
+							<option value="Finance">Finance</option>
+							<option value="Marketing">Marketing</option>
+							<option value="Healthcare">Healthcare</option>
+							<option value="Education">Education</option>
+							<option value="Other">Other</option>
+						</select>
 					</div>
 
 					<div class="cre-step">
-						<label for="cre_exclude">Constraints</label>
-						<input type="text" id="cre_exclude" name="cre_exclude" placeholder="No relocation, etc." required>
+						<label for="cre_role_title">Desired Role or Job Title</label>
+						<input type="text" id="cre_role_title" name="cre_role_title" placeholder="e.g., Product Manager, Senior Data Analyst" required>
+					</div>
+
+					<div class="cre-step">
+						<label for="cre_additional_skills">Additional Skills <span class="cre-optional-hint">(optional)</span></label>
+						<input type="text" id="cre_additional_skills" name="cre_additional_skills" placeholder="Skills not on your resume">
+					</div>
+
+					<div class="cre-step">
+						<label for="cre_exclude">Restrictions / Preferences <span class="cre-optional-hint">(optional)</span></label>
+						<input type="text" id="cre_exclude" name="cre_exclude" placeholder="e.g., No relocation, 2 weeks notice, remote only">
 					</div>
 
 					<!-- Resume Upload -->
 					<div class="cre-step cre-upload-area">
 						<label for="cre_resume" class="cre-upload-label">
 							<span class="cre-icon">📄</span>
-							<span class="cre-text">Click to upload Resume (DOCX only)</span>
+							<span class="cre-text" id="cre-upload-label-text">Click to upload Resume (DOCX only)</span>
 							<input type="file" id="cre_resume" name="resume" accept=".docx" required>
 						</label>
 						<div id="cre-upload-progress">
 							<div class="bar"></div>
 						</div>
 						<div id="cre-upload-success" style="display:none; margin-top:10px; color: #16a34a; font-weight:600; font-size: 0.9rem;">
-							✅ Resume Uploaded Successfully
+							✅ Document uploaded successfully
 						</div>
 					</div>
 
-					<button type="submit" id="cre-submit-btn" class="cre-submit-btn" disabled>Generate Roadmap</button>
+					<div class="cre-privacy-note">
+						🔒 Your resume is safe with us — we never share any information, and you can upload anonymously (if no name is provided, it will appear as John Doe).
+					</div>
+
+					<button type="submit" id="cre-submit-btn" class="cre-submit-btn" disabled>GENERATE MY CUSTOMIZED ROADMAP</button>
 				</form>
 
 				<div id="cre-loading" style="display:none;">
