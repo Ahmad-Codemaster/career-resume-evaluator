@@ -1,0 +1,169 @@
+/* ==========================================================================
+   Career Resume Evaluator – Frontend Styles
+   ========================================================================== */
+
+.cre-wrap {
+	max-width: 860px;
+	margin: 2rem auto;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+	color: #333;
+}
+
+/* Form fields */
+.cre-field {
+	margin-bottom: 1.25rem;
+}
+
+.cre-field label {
+	display: block;
+	margin-bottom: 0.4rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+}
+
+.cre-field input[type="file"],
+.cre-field textarea {
+	width: 100%;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	font-size: 0.95rem;
+	box-sizing: border-box;
+	transition: border-color 0.2s;
+}
+
+.cre-field input[type="file"]:focus,
+.cre-field textarea:focus {
+	outline: none;
+	border-color: #0073aa;
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.25);
+}
+
+#cre-submit {
+	display: inline-block;
+	padding: 0.65rem 1.5rem;
+	background-color: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+#cre-submit:hover,
+#cre-submit:focus {
+	background-color: #005177;
+}
+
+#cre-submit:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
+}
+
+/* Loading */
+#cre-loading {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-top: 1.25rem;
+	font-size: 0.95rem;
+	color: #555;
+}
+
+.cre-spinner {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 3px solid #ccc;
+	border-top-color: #0073aa;
+	border-radius: 50%;
+	animation: cre-spin 0.75s linear infinite;
+}
+
+@keyframes cre-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Error message */
+#cre-error {
+	margin-top: 1.25rem;
+	padding: 0.75rem 1rem;
+	background-color: #fde8e8;
+	border: 1px solid #f5c2c2;
+	border-radius: 4px;
+	color: #9b2335;
+	font-size: 0.95rem;
+}
+
+/* Results */
+#cre-results {
+	margin-top: 2rem;
+}
+
+#cre-results h2 {
+	font-size: 1.3rem;
+	margin-bottom: 1rem;
+}
+
+.cre-table-wrapper {
+	overflow-x: auto;
+}
+
+#cre-results-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+#cre-results-table th,
+#cre-results-table td {
+	padding: 0.65rem 0.85rem;
+	border: 1px solid #ddd;
+	text-align: left;
+	vertical-align: top;
+}
+
+#cre-results-table thead th {
+	background-color: #0073aa;
+	color: #fff;
+	white-space: nowrap;
+}
+
+#cre-results-table tbody tr:nth-child(even) {
+	background-color: #f9f9f9;
+}
+
+#cre-results-table tbody tr:hover {
+	background-color: #eef6fb;
+}
+
+/* Score badge */
+.cre-score {
+	display: inline-block;
+	padding: 0.2rem 0.55rem;
+	border-radius: 12px;
+	font-weight: 700;
+	font-size: 0.88rem;
+	color: #fff;
+}
+
+.cre-score-high   { background-color: #2e7d32; }
+.cre-score-medium { background-color: #f57c00; }
+.cre-score-low    { background-color: #c62828; }
+
+/* Skill tags */
+.cre-skills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+}
+
+.cre-skill-tag {
+	padding: 0.15rem 0.5rem;
+	background-color: #e0f0fb;
+	border: 1px solid #b3d9f5;
+	border-radius: 12px;
+	font-size: 0.82rem;
+	white-space: nowrap;
+}
