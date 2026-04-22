@@ -97,7 +97,7 @@ class Ajax {
 
 		if ( ! $data_parsed ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'CRE: Failed to parse AI response. Raw text: ' . substr( $ai_text, 0, 500 ) );
+				error_log( 'CRE: Failed to parse AI response. Response length: ' . strlen( $ai_text ) );
 			}
 			wp_send_json_error( 'Failed to parse AI response. Please try again.' );
 		}
@@ -419,15 +419,22 @@ class Ajax {
 			return $decoded;
 		}
 
-		// Attempt to extract the first JSON object from the text
-		if ( preg_match( '/\{.*\}/s', $cleaned, $matches ) ) {
-			$decoded = json_decode( $matches[0], true );
+		// Attempt to extract the first complete JSON object from the text using position-based search
+		$start = strpos( $cleaned, '{' );
+		$end   = strrpos( $cleaned, '}' );
+		if ( $start !== false && $end !== false && $end > $start ) {
+			$decoded = json_decode( substr( $cleaned, $start, $end - $start + 1 ), true );
 			if ( $decoded !== null ) {
 				return $decoded;
 			}
 		}
 
 		return null;
+	}
+
+	// ---> HELPER: Safely implode an array value, returning '' if not an array <---
+	private function safe_implode( $value, $separator = ', ' ) {
+		return is_array( $value ) ? implode( $separator, $value ) : '';
 	}
 
 	// ---> STEP A: Resume grounding / classification prompt <---
@@ -459,9 +466,9 @@ RESUME:
 		// Build grounding block if Step A succeeded
 		$grounding_block = '';
 		if ( ! empty( $grounding ) && is_array( $grounding ) ) {
-			$subdomains   = is_array( $grounding['subdomains'] ?? null )       ? implode( ', ', $grounding['subdomains'] )       : '';
-			$current_roles = is_array( $grounding['likely_current_roles'] ?? null ) ? implode( ', ', $grounding['likely_current_roles'] ) : '';
-			$skills       = is_array( $grounding['strongest_skills'] ?? null ) ? implode( ', ', $grounding['strongest_skills'] ) : '';
+			$subdomains    = $this->safe_implode( $grounding['subdomains'] ?? null );
+			$current_roles = $this->safe_implode( $grounding['likely_current_roles'] ?? null );
+			$skills        = $this->safe_implode( $grounding['strongest_skills'] ?? null );
 
 			$grounding_block = "
 RESUME GROUNDING DATA (authoritative resume analysis — highest priority):
