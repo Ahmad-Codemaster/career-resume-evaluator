@@ -18,7 +18,7 @@ define( 'CRE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // Autoloader for classes
 spl_autoload_register( function ( $class ) {
 	$prefix = 'CRE\\';
-	$base_dir = CRE_PLUGIN_DIR . 'includes/';
+	$base_dir = CRE_PLUGIN_DIR . 'include/';
 
 	$len = strlen( $prefix );
 	if ( strncmp( $prefix, $class, $len ) !== 0 ) {
@@ -43,6 +43,6 @@ add_action( 'plugins_loaded', 'cre_init' );
 
 // Activation Hook for DB Table Creation
 register_activation_hook( __FILE__, function() {
-	require_once CRE_PLUGIN_DIR . 'includes/class-db.php';
+	require_once CRE_PLUGIN_DIR . 'include/class-db.php';
 	\CRE\DB::create_table();
 } );

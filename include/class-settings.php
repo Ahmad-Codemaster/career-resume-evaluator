@@ -36,7 +36,7 @@ class Settings {
 		if ( isset( $_POST['cre_action'] ) && 'export_csv' === $_POST['cre_action'] && current_user_can( 'manage_options' ) ) {
 			check_admin_referer( 'cre_export_csv', 'cre_export_nonce' );
 
-			require_once CRE_PLUGIN_DIR . 'includes/class-db.php';
+			require_once CRE_PLUGIN_DIR . 'include/class-db.php';
 			$submissions = DB::get_all_for_export();
 
 			header( 'Content-Type: text/csv' );
@@ -155,7 +155,7 @@ class Settings {
 	}
 
 	private function render_history_tab() {
-		require_once CRE_PLUGIN_DIR . 'includes/class-db.php';
+		require_once CRE_PLUGIN_DIR . 'include/class-db.php';
 		$submissions = DB::get_submissions( 50 );
 		?>
 		<div style="margin-top: 20px;">
