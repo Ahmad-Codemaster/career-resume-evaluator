@@ -63,8 +63,6 @@ class Ajax {
 			'location'          => sanitize_text_field( $_POST['location'] ?? '' ),
 			'work_setup'        => sanitize_text_field( $_POST['work_setup'] ?? '' ),
 			'cur_salary'        => sanitize_text_field( $_POST['cur_salary'] ?? '' ),
-			'field'             => sanitize_text_field( $_POST['field'] ?? '' ),
-			'role_title'        => sanitize_text_field( $_POST['role_title'] ?? '' ),
 			'tgt_salary'        => sanitize_text_field( $_POST['tgt_salary'] ?? '' ),
 			'currency'          => sanitize_text_field( $_POST['currency'] ?? 'USD' ),
 			'additional_skills' => sanitize_text_field( $_POST['additional_skills'] ?? '' ),
@@ -72,40 +70,48 @@ class Ajax {
 			'email'             => sanitize_email( $_POST['email'] ?? '' ),
 		];
 
-		// 3. Construct the Strict AI Prompt using your schema engine
-		$prompt = $this->build_prompt( $data, $resume_text );
-
-		// 4. API Call to Grok
+		// 3. Two-step Grok pipeline
 		$api_key = get_option( 'cre_grok_api_key' );
 		$model   = get_option( 'cre_grok_model', 'grok-3' );
 
-		$response = wp_remote_post( 'https://api.x.ai/v1/chat/completions', [
-			'headers' => [
-				'Content-Type'  => 'application/json',
-				'Authorization' => 'Bearer ' . $api_key,
-			],
-			'body'    => json_encode( [
-				'model'       => $model,
-				'messages'    => [ [ 'role' => 'user', 'content' => $prompt ] ],
-				'temperature' => 0.1, 
-			] ),
-			'timeout' => 120,
-		] );
+		// Step A: Resume grounding / classification
+		$grounding = null;
+		$grounding_prompt  = $this->build_grounding_prompt( $resume_text, $data['location'], $data['work_setup'] );
+		$grounding_response = $this->call_grok_api( $grounding_prompt, $api_key, $model );
+		if ( ! is_wp_error( $grounding_response ) ) {
+			$grounding_text = $this->extract_ai_text( $grounding_response );
+			$grounding      = $this->extract_json( $grounding_text );
+		}
+		// $grounding may be null if Step A failed — build_prompt handles the fallback gracefully.
+
+		// Step B: Full career roadmap using grounding context
+		$prompt   = $this->build_prompt( $data, $resume_text, $grounding );
+		$response = $this->call_grok_api( $prompt, $api_key, $model );
 
 		if ( is_wp_error( $response ) ) {
 			wp_send_json_error( 'API Request Failed: ' . $response->get_error_message() );
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		$result = json_decode( $body, true );
-		$ai_text = $result['choices'][0]['message']['content'] ?? '';
-		
-		// Clean JSON formatting
-		$ai_text = str_replace( ['```json', '```'], '', $ai_text );
-		$data_parsed = json_decode( trim($ai_text), true );
+		$ai_text     = $this->extract_ai_text( $response );
+		$data_parsed = $this->extract_json( $ai_text );
 
 		if ( ! $data_parsed ) {
-			wp_send_json_error( 'Failed to parse AI response.' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'CRE: Failed to parse AI response. Raw text: ' . substr( $ai_text, 0, 500 ) );
+			}
+			wp_send_json_error( 'Failed to parse AI response. Please try again.' );
+		}
+
+		// Schema validation
+		if ( ! isset( $data_parsed['profile'] ) || ! isset( $data_parsed['analysis'] ) || ! isset( $data_parsed['careers'] ) || ! is_array( $data_parsed['careers'] ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'CRE: AI response missing required keys. Keys found: ' . implode( ', ', array_keys( $data_parsed ) ) );
+			}
+			wp_send_json_error( 'The AI returned an incomplete response. Please try again.' );
+		}
+
+		if ( empty( $data_parsed['careers'] ) ) {
+			wp_send_json_error( 'The AI did not return any career paths. Please try again.' );
 		}
 
 		// 5. The Kill-Switch Validation
@@ -162,7 +168,6 @@ class Ajax {
 			<h3>A new career roadmap was just generated on your website!</h3>
 			<p><strong>Candidate Name:</strong> " . esc_html( $candidate_name ) . "</p>
 			<p><strong>Candidate Email:</strong> " . esc_html( $data['email'] ) . "</p>
-			<p><strong>Requested Field:</strong> " . esc_html( $data['field'] ) . "</p>
 			<p><strong>Direct Report Link:</strong> <a href='" . esc_url( $report_url ) . "'>Click here to view their generated roadmap</a></p>
 			<hr>
 			<p><small>You can also view their full resume and data in your WordPress Dashboard under <strong>Career Evaluator &rarr; Submissions</strong>.</small></p>
@@ -365,7 +370,7 @@ class Ajax {
 			'app_id'           => $app_id,
 			'app_key'          => $app_key,
 			'results_per_page' => $limit,
-			'what'             => $query,
+			'what'             => $safe_query,
 			'content-type'     => 'application/json',
 		];
 
@@ -378,18 +383,104 @@ class Ajax {
 		return $body['results'] ?? [];
 	}
 
-	// ---> NEW: MERGED BUSINESS LOGIC & SCHEMA PROMPT <---
-	private function build_prompt($data, $resume_text) {
+	// ---> HELPER: Make a Grok API call <---
+	private function call_grok_api( $prompt, $api_key, $model ) {
+		return wp_remote_post( 'https://api.x.ai/v1/chat/completions', [
+			'headers' => [
+				'Content-Type'  => 'application/json',
+				'Authorization' => 'Bearer ' . $api_key,
+			],
+			'body'    => json_encode( [
+				'model'       => $model,
+				'messages'    => [ [ 'role' => 'user', 'content' => $prompt ] ],
+				'temperature' => 0.1,
+			] ),
+			'timeout' => 120,
+		] );
+	}
+
+	// ---> HELPER: Extract the text content from a Grok API response <---
+	private function extract_ai_text( $response ) {
+		$body   = wp_remote_retrieve_body( $response );
+		$result = json_decode( $body, true );
+		return $result['choices'][0]['message']['content'] ?? '';
+	}
+
+	// ---> HELPER: Robustly extract a JSON object from AI text <---
+	private function extract_json( $text ) {
+		// Strip markdown code fences (e.g. ```json ... ```)
+		$cleaned = preg_replace( '/^```(?:json)?\s*/i', '', trim( $text ) );
+		$cleaned = preg_replace( '/\s*```\s*$/i', '', $cleaned );
+		$cleaned = trim( $cleaned );
+
+		// Try direct decode first
+		$decoded = json_decode( $cleaned, true );
+		if ( $decoded !== null ) {
+			return $decoded;
+		}
+
+		// Attempt to extract the first JSON object from the text
+		if ( preg_match( '/\{.*\}/s', $cleaned, $matches ) ) {
+			$decoded = json_decode( $matches[0], true );
+			if ( $decoded !== null ) {
+				return $decoded;
+			}
+		}
+
+		return null;
+	}
+
+	// ---> STEP A: Resume grounding / classification prompt <---
+	private function build_grounding_prompt( $resume_text, $location, $work_setup ) {
+		return "You are a professional resume analyst. Read the resume below and output ONLY a valid JSON object — no explanation, no markdown.
+
+JSON structure (use exactly these keys):
+{
+  \"domain\": \"Primary career domain e.g. Performance Marketing, Software Engineering, Finance\",
+  \"subdomains\": [\"subdomain1\", \"subdomain2\"],
+  \"seniority\": \"junior or mid or senior or lead or executive\",
+  \"likely_current_roles\": [\"Most likely job title 1\", \"Most likely job title 2\"],
+  \"strongest_skills\": [\"Skill 1\", \"Skill 2\", \"Skill 3\", \"Skill 4\", \"Skill 5\"],
+  \"confidence\": 85
+}
+
+Context:
+Location: {$location}
+Work Setup: {$work_setup}
+
+RESUME:
+{$resume_text}";
+	}
+
+	// ---> STEP B: Full career roadmap prompt (resume-first, grounding-aware) <---
+	private function build_prompt( $data, $resume_text, $grounding = null ) {
 		$currency = $data['currency'] ?? 'USD';
 
-		return "
-SYSTEM ROLE:
-You are a strict, logic-driven Career Strategy Engine.
+		// Build grounding block if Step A succeeded
+		$grounding_block = '';
+		if ( ! empty( $grounding ) && is_array( $grounding ) ) {
+			$subdomains   = is_array( $grounding['subdomains'] ?? null )       ? implode( ', ', $grounding['subdomains'] )       : '';
+			$current_roles = is_array( $grounding['likely_current_roles'] ?? null ) ? implode( ', ', $grounding['likely_current_roles'] ) : '';
+			$skills       = is_array( $grounding['strongest_skills'] ?? null ) ? implode( ', ', $grounding['strongest_skills'] ) : '';
 
-*** CRITICAL DIRECTIVE: THE 'RESUME IS REALITY' PROTOCOL ***
-1. The user's Resume is the ONLY absolute source of truth. The 'Desired Field' and 'Desired Role' inputs are merely suggestions.
-2. THE REALITY CHECK (PIVOTING): If the Desired Role/Field is disconnected from the resume (e.g., Resume shows 'Software Developer' but user wants 'Dentist'), you MUST completely IGNORE their request. Build 3 career paths based STRICTLY on maximizing the skills currently in their resume.
-3. EXPLANATION: If you ignore their request, you must state exactly why in `analysis.summary`.
+			$grounding_block = "
+RESUME GROUNDING DATA (authoritative resume analysis — highest priority):
+Domain: " . ( $grounding['domain'] ?? 'Unknown' ) . "
+Subdomains: {$subdomains}
+Seniority: " . ( $grounding['seniority'] ?? 'Unknown' ) . "
+Likely Current Roles: {$current_roles}
+Strongest Skills: {$skills}
+---";
+		}
+
+		return "SYSTEM ROLE:
+You are a strict, logic-driven Career Strategy Engine.
+{$grounding_block}
+*** CRITICAL DIRECTIVE: RESUME-FIRST PROTOCOL ***
+1. The candidate's Resume (and the Grounding Data above, if present) are the ONLY absolute sources of truth.
+2. Additional Skills and Restrictions below are soft context hints only — use them only if they are compatible with the resume.
+3. Build all 3 career paths strictly from the resume-grounded domain and skills. Do NOT invent paths unrelated to the resume evidence.
+4. If any soft hints were ignored or adjusted, state exactly why in analysis.summary.
 
 ---
 INPUT DATA:
@@ -397,31 +488,31 @@ Location: {$data['location']}
 Work Setup: {$data['work_setup']}
 Current Salary: {$data['cur_salary']} {$currency}
 Target Salary Year 8: {$data['tgt_salary']} {$currency}
-Desired Field: {$data['field']}
-Desired Role: {$data['role_title']}
+Additional Skills (soft hint): {$data['additional_skills']}
+Restrictions / Preferences (soft hint): {$data['exclude']}
 
 RESUME:
 {$resume_text}
 ---
 
 EXECUTION STEPS:
-STEP 1: Validate inputs.
-STEP 2: Extract the user's current professional role and total years of experience from the resume.
-STEP 3: Generate EXACTLY 3 data-driven career paths based on the resume. NEVER skip generation.
-STEP 4: Score the profile strictly 0-100 based on the resume strength.
+STEP 1: Validate that this is a real professional resume. If not, set analysis.summary to include the phrase 'not a valid resume'.
+STEP 2: Extract the candidate's current professional role and total years of experience from the resume.
+STEP 3: Generate EXACTLY 3 data-driven career paths based strictly on the resume evidence. NEVER skip generation.
+STEP 4: Score the profile 0-100 based on resume strength.
 
-OUTPUT SCHEMA (MANDATORY - YOU MUST RETURN EVERY KEY AS FORMATTED BELOW):
+OUTPUT SCHEMA (MANDATORY — return EVERY key exactly as shown, no extra keys, no markdown):
 {
   \"profile\": {
-    \"name\": \"Extract Name\", 
-    \"extracted_role\": \"Max 4 words\", 
+    \"name\": \"Extract Name\",
+    \"extracted_role\": \"Max 4 words\",
     \"extracted_experience\": \"E.g. 3\",
     \"scores\": { \"resume_strength\": 0, \"career_match\": 0, \"transferability_score\": 0 }
   },
-  \"analysis\": { 
-    \"summary\": \"Explain the strategy and any pivots here.\", 
-    \"strengths\": [\"Strength 1\"], 
-    \"weaknesses\": [\"Gap 1\"] 
+  \"analysis\": {
+    \"summary\": \"Explain the strategy and any pivots here.\",
+    \"strengths\": [\"Strength 1\"],
+    \"weaknesses\": [\"Gap 1\"]
   },
   \"careers\": [
     {
@@ -444,6 +535,7 @@ OUTPUT SCHEMA (MANDATORY - YOU MUST RETURN EVERY KEY AS FORMATTED BELOW):
     }
   ]
 }
+Return ONLY the JSON object above. No preamble, no explanation, no markdown code fences.
 ";
 	}
 

@@ -120,26 +120,6 @@ class Shortcode {
 					</div>
 
 					<div class="cre-step">
-						<label for="cre_field">Desired Field / Domain</label>
-						<select id="cre_field" name="cre_field" required>
-							<option value="" disabled selected>Select a field</option>
-							<option value="Technology">Technology</option>
-							<option value="Product">Product</option>
-							<option value="Data / Analytics">Data / Analytics</option>
-							<option value="Finance">Finance</option>
-							<option value="Marketing">Marketing</option>
-							<option value="Healthcare">Healthcare</option>
-							<option value="Education">Education</option>
-							<option value="Other">Other</option>
-						</select>
-					</div>
-
-					<div class="cre-step">
-						<label for="cre_role_title">Desired Role or Job Title</label>
-						<input type="text" id="cre_role_title" name="cre_role_title" placeholder="e.g., Product Manager, Senior Data Analyst" required>
-					</div>
-
-					<div class="cre-step">
 						<label for="cre_additional_skills">Additional Skills <span class="cre-optional-hint">(optional)</span></label>
 						<input type="text" id="cre_additional_skills" name="cre_additional_skills" placeholder="Skills not on your resume">
 					</div>
