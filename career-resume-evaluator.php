@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LumenPath Career Planner
  * Description: Answer a few questions about your future goals and work preferences so Lumen can map your skills into higher-paying, future-ready roles.
- * Version: 1.1.19
+ * Version: 1.1.18
  * Author: Ahmad
  * Text Domain: career-resume-evaluator
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CRE_VERSION', '1.1.12' );
+define( 'CRE_VERSION', '1.1.18' );
 define( 'CRE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CRE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
